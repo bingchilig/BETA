@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>인원체크 시스템</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="app">
+        <header class="topbar">
+            <div class="clock-section">
+                <div id="clock" class="clock">00:00:00</div>
+                <div id="scheduleInfo" class="schedule-info">
+                    <div id="currentPeriod"></div>
+                    <div class="progress-container" id="progressContainer" style="display: none;">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progressFill"></div>
+                        </div>
+                        <div class="progress-text" id="progressText">0%</div>
+                    </div>
+                </div>
+            </div>
+            <div class="center-info">
+                <div class="info-item">총원 <span id="total">29</span></div>
+                <div class="info-item">현원 <span id="present">29</span></div>
+                <div class="info-item">결원 <span id="absent">0</span></div>
+            </div>
+        </header>
+        <main class="main">
+            <section class="left-area">
+                <div class="section-title">수행평가 알리미</div>
+                <div class="assessment-container" id="assessmentContainer"></div>
+                <button class="add-btn" onclick="openAssessmentModal()">수행평가 추가</button>
+             
+            </section>
+            <section class="middle-area">
+                <div class="section-title">D-Day</div>
+                <div class="dday-container" id="ddayContainer"></div>
+                <button class="add-btn" onclick="openDdayModal()">D-Day 추가</button>
+            </section>
+            <section class="right-area">
+                <div class="seats-container">
+                    <div id="seatGrid" class="seat-grid"></div>
+                </div>
+                <div class="movement-container">
+                    <h3>이동 현황</h3>
+                    <div id="classPanel" class="class-panel"></div>
+                </div>
+            </section>
+        </main>
+        <div id="bearingOverlay" class="bearing-overlay"></div>
+        <div id="bearingSide" class="bearing-side">
+            <div class="side-title">세부 위치 선택</div>
+            <div id="etcList" class="etc-list"></div>
+        </div>
+    </div>
+
+    <!-- D-Day 모달 -->
+    <div id="ddayModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-title">D-Day 추가</div>
+            <div class="form-group">
+                <label class="form-label">이벤트 명</label>
+                <input type="text" id="ddayTitle" class="form-input" placeholder="예: 중간고사">
+                <div id="ddayKeyboard" class="virtual-keyboard">
+                    <div class="keyboard-row">
+                        <div class="key" onclick="typeKey('ㄱ')">ㄱ</div>
+                        <div class="key" onclick="typeKey('ㄴ')">ㄴ</div>
+                        <div class="key" onclick="typeKey('ㄷ')">ㄷ</div>
+                        <div class="key" onclick="typeKey('ㄹ')">ㄹ</div>
+                        <div class="key" onclick="typeKey('ㅁ')">ㅁ</div>
+                        <div class="key" onclick="typeKey('ㅂ')">ㅂ</div>
+                        <div class="key" onclick="typeKey('ㅅ')">ㅅ</div>
+                        <div class="key" onclick="typeKey('ㅇ')">ㅇ</div>
+                        <div class="key" onclick="typeKey('ㅈ')">ㅈ</div>
+                        <div class="key" onclick="typeKey('ㅊ')">ㅊ</div>
+                    </div>
+                    <div class="keyboard-row">
+                        <div class="key" onclick="typeKey('ㅋ')">ㅋ</div>
+                        <div class="key" onclick="typeKey('ㅌ')">ㅌ</div>
+                        <div class="key" onclick="typeKey('ㅍ')">ㅍ</div>
+                        <div class="key" onclick="typeKey('ㅎ')">ㅎ</div>
+                        <div class="key" onclick="typeKey('ㅏ')">ㅏ</div>
+                        <div class="key" onclick="typeKey('ㅑ')">ㅑ</div>
+                        <div class="key" onclick="typeKey('ㅓ')">ㅓ</div>
+                        <div class="key" onclick="typeKey('ㅕ')">ㅕ</div>
+                        <div class="key" onclick="typeKey('ㅗ')">ㅗ</div>
+                        <div class="key" onclick="typeKey('ㅛ')">ㅛ</div>
+                    </div>
+                    <div class="keyboard-row">
+                        <div class="key" onclick="typeKey('ㅜ')">ㅜ</div>
+                        <div class="key" onclick="typeKey('ㅠ')">ㅠ</div>
+                        <div class="key" onclick="typeKey('ㅡ')">ㅡ</div>
+                        <div class="key" onclick="typeKey('ㅣ')">ㅣ</div>
+                        <div class="key" onclick="typeKey('1')">1</div>
+                        <div class="key" onclick="typeKey('2')">2</div>
+                        <div class="key" onclick="typeKey('3')">3</div>
+                        <div class="key" onclick="typeKey('4')">4</div>
+                        <div class="key" onclick="typeKey('5')">5</div>
+                        <div class="key" onclick="typeKey('6')">6</div>
+                    </div>
+                    <div class="keyboard-row">
+                        <div class="key" onclick="typeKey('7')">7</div>
+                        <div class="key" onclick="typeKey('8')">8</div>
+                        <div class="key" onclick="typeKey('9')">9</div>
+                        <div class="key" onclick="typeKey('0')">0</div>
+                        <div class="key space" onclick="typeKey(' ')">스페이스</div>
+                        <div class="key backspace" onclick="backspaceKey()">지우기</div>
+                    </div>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">날짜</label>
+                <input type="date" id="ddayDate" class="form-input">
+            </div>
+            <div class="modal-actions">
+                <button class="modal-btn secondary" onclick="closeDdayModal()">취소</button>
+                <button class="modal-btn primary" onclick="addDday()">추가</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 수행평가 모달 -->
+    <div id="assessmentModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-title">수행평가 추가</div>
+            <div class="form-group">
+                <label class="form-label">과목명</label>
+                <input type="text" id="assessmentSubject" class="form-input" placeholder="예: 수학">
+                <div id="assessmentKeyboard" class="virtual-keyboard">
+                    <div class="keyboard-row">
+                        <div class="key" onclick="typeKey('ㄱ', 'assessmentSubject')">ㄱ</div>
+                        <div class="key" onclick="typeKey('ㄴ', 'assessmentSubject')">ㄴ</div>
+                        <div class="key" onclick="typeKey('ㄷ', 'assessmentSubject')">ㄷ</div>
+                        <div class="key" onclick="typeKey('ㄹ', 'assessmentSubject')">ㄹ</div>
+                        <div class="key" onclick="typeKey('ㅁ', 'assessmentSubject')">ㅁ</div>
+                        <div class="key" onclick="typeKey('ㅂ', 'assessmentSubject')">ㅂ</div>
+                        <div class="key" onclick="typeKey('ㅅ', 'assessmentSubject')">ㅅ</div>
+                        <div class="key" onclick="typeKey('ㅇ', 'assessmentSubject')">ㅇ</div>
+                        <div class="key" onclick="typeKey('ㅈ', 'assessmentSubject')">ㅈ</div>
+                        <div class="key" onclick="typeKey('ㅊ', 'assessmentSubject')">ㅊ</div>
+                    </div>
+                    <div class="keyboard-row">
+                        <div class="key" onclick="typeKey('ㅋ', 'assessmentSubject')">ㅋ</div>
+                        <div class="key" onclick="typeKey('ㅌ', 'assessmentSubject')">ㅌ</div>
+                        <div class="key" onclick="typeKey('ㅍ', 'assessmentSubject')">ㅍ</div>
+                        <div class="key" onclick="typeKey('ㅎ', 'assessmentSubject')">ㅎ</div>
+                        <div class="key" onclick="typeKey('ㅏ', 'assessmentSubject')">ㅏ</div>
+                        <div class="key" onclick="typeKey('ㅑ', 'assessmentSubject')">ㅑ</div>
+                        <div class="key" onclick="typeKey('ㅓ', 'assessmentSubject')">ㅓ</div>
+                        <div class="key" onclick="typeKey('ㅕ', 'assessmentSubject')">ㅕ</div>
+                        <div class="key" onclick="typeKey('ㅗ', 'assessmentSubject')">ㅗ</div>
+                        <div class="key" onclick="typeKey('ㅛ', 'assessmentSubject')">ㅛ</div>
+                    </div>
+                    <div class="keyboard-row">
+                        <div class="key" onclick="typeKey('ㅜ', 'assessmentSubject')">ㅜ</div>
+                        <div class="key" onclick="typeKey('ㅠ', 'assessmentSubject')">ㅠ</div>
+                        <div class="key" onclick="typeKey('ㅡ', 'assessmentSubject')">ㅡ</div>
+                        <div class="key" onclick="typeKey('ㅣ', 'assessmentSubject')">ㅣ</div>
+                        <div class="key" onclick="typeKey('1', 'assessmentSubject')">1</div>
+                        <div class="key" onclick="typeKey('2', 'assessmentSubject')">2</div>
+                        <div class="key" onclick="typeKey('3', 'assessmentSubject')">3</div>
+                        <div class="key" onclick="typeKey('4', 'assessmentSubject')">4</div>
+                        <div class="key" onclick="typeKey('5', 'assessmentSubject')">5</div>
+                        <div class="key" onclick="typeKey('6', 'assessmentSubject')">6</div>
+                    </div>
+                    <div class="keyboard-row">
+                        <div class="key" onclick="typeKey('7', 'assessmentSubject')">7</div>
+                        <div class="key" onclick="typeKey('8', 'assessmentSubject')">8</div>
+                        <div class="key" onclick="typeKey('9', 'assessmentSubject')">9</div>
+                        <div class="key" onclick="typeKey('0', 'assessmentSubject')">0</div>
+                        <div class="key space" onclick="typeKey(' ', 'assessmentSubject')">스페이스</div>
+                        <div class="key backspace" onclick="backspaceKey('assessmentSubject')">지우기</div>
+                    </div>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">날짜</label>
+                <input type="date" id="assessmentDate" class="form-input">
+            </div>
+            <div class="modal-actions">
+                <button class="modal-btn secondary" onclick="closeAssessmentModal()">취소</button>
+                <button class="modal-btn primary" onclick="addAssessment()">추가</button>
+            </div>
+        </div>
+    </div>
+    
+    <script src="script.js"></script>
+    <script src="new.js"></script>
+</body>
+</html>
