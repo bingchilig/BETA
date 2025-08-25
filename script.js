@@ -649,7 +649,7 @@ const API_URL = 'https://script.google.com/macros/s/AKfycbxDjTzOWBeuHXaJRcMY5dv3
         }
 
         function crossFadeTo(index) {
-        if (!ensureLayers()) return;
+            if (!ensureLayers()) return;
 
         const nextSrc = galleryImages[index];
         const nextLayer = activeLayerKey === 'A' ? layerB : layerA;
