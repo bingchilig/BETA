@@ -359,32 +359,41 @@ async function deleteServerDday(id) {
 async function addServerAssessment() {
     const subject = document.getElementById('assessmentSubject').value.trim();
     const date = document.getElementById('assessmentDate').value;
-    
-    if (!subject || !date) {
-        alert('모든 필드를 입력해주세요.');
-        return;
-    }
-    
+    if (!subject || !date) { alert('모든 필드를 입력해주세요.'); return; }
+
     updateNewApiConnectionStatus('connecting');
-    
+
     try {
         const result = await addAssessmentToServer(subject, date);
-        
-        if (result.success) {
-            // 성공 시 즉시 동기화
-            await syncWithNewServer();
-            closeServerAssessmentModal();
-            alert('수행평가가 추가되었습니다!');
-        } else {
-            throw new Error(result.error || '서버 추가 실패');
+        if (result && result.success) {
+        await syncWithNewServer();
+        closeServerAssessmentModal();
+        alert('수행평가가 추가되었습니다!');
+        updateNewApiConnectionStatus('connected');
+        return;
         }
-        
+        throw new Error(result?.error || '서버 추가 실패');
     } catch (error) {
-        console.error('수행평가 추가 오류:', error);
-        alert(`수행평가 추가 중 오류가 발생했습니다: ${error.message}`);
+        console.warn('[서버 실패 → 로컬 저장 fallback]', error.message);
+
+        // ✅ 자동 로컬 저장 fallback
+        if (typeof window.addAssessment === 'function') {
+        // 로컬 리스트에 직접 push
+        window.assessmentList = JSON.parse(localStorage.getItem('assessmentList') || '[]');
+        window.assessmentList.push({ subject, date, id: Date.now() });
+        localStorage.setItem('assessmentList', JSON.stringify(window.assessmentList));
+        if (typeof window.updateAssessmentDisplay === 'function') {
+            window.updateAssessmentDisplay();
+        }
+        closeServerAssessmentModal();
+        alert('서버 연결 문제로 로컬에 저장했습니다.');
+        } else {
+        alert(`수행평가 추가 실패: ${error.message}`);
+        }
         updateNewApiConnectionStatus('error');
     }
 }
+
 
 // 서버에서 수행평가 삭제하는 함수 (전역 스코프)
 async function deleteServerAssessment(id) {
@@ -440,11 +449,11 @@ function closeServerDdayModal() {
 function openServerAssessmentModal() {
     document.getElementById('assessmentModal').classList.add('visible');
     document.getElementById('assessmentSubject').focus();
-    
-    // 기존 버튼을 서버 버튼으로 교체
+
     const addButton = document.querySelector('#assessmentModal .modal-btn.primary');
     if (addButton) {
-        addButton.onclick = addServerAssessment;
+        addButton.removeAttribute('onclick');      // ✅ inline 핸들러 제거
+        addButton.onclick = addServerAssessment;   // JS 핸들러만 사용
         addButton.textContent = '수행평가 추가';
     }
 }
@@ -501,32 +510,38 @@ function enableLocalMode() {
     console.log('로컬 모드가 활성화되었습니다.');
 }
 
-// 초기화 함수
-function initializeNewApi() {
+// 초기화 함수 (연결 테스트 기반)
+async function initializeNewApi() {
     console.log('새 API 초기화 중...');
-    
-    // 첫 동기화
-    syncWithNewServer();
-    
-    // 주기적 동기화
-    setInterval(() => {
-        if (!isNewApiUpdating) {
-            syncWithNewServer();
-        }
-    }, SYNC_INTERVAL_NEW);
-    
-    // 페이지 가시성 변경 시 동기화
-    document.addEventListener('visibilitychange', () => {
-        if (!document.hidden) {
-            syncWithNewServer();
-        }
-    });
-    
-    // 서버 모드 활성화
-    enableServerMode();
-    
-    console.log('새 API 초기화 완료');
+    updateNewApiConnectionStatus('connecting');
+
+    const ok = await testNewApiConnection(); // ✅ 연결 확인
+    if (ok) {
+        enableServerMode();
+        await syncWithNewServer();             // 첫 동기화
+        // 주기 동기화
+        setInterval(() => {
+        if (!isNewApiUpdating) syncWithNewServer();
+        }, SYNC_INTERVAL_NEW);
+
+        // 탭 복귀 시 동기화
+        document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) syncWithNewServer();
+        });
+
+        updateNewApiConnectionStatus('connected');
+        console.log('새 API 초기화 완료(서버 모드)');
+    } else {
+        enableLocalMode();                     // ✅ 서버 안되면 로컬로
+        updateNewApiConnectionStatus('error');
+        console.log('새 API 연결 실패 → 로컬 모드로 전환');
+    }
 }
+
+// 페이지 로드 시 초기화
+document.addEventListener('DOMContentLoaded', () => {
+  setTimeout(() => { initializeNewApi(); }, 1000);
+});
 
 // 페이지 로드 시 초기화
 document.addEventListener('DOMContentLoaded', () => {
