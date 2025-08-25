@@ -312,18 +312,24 @@ const API_URL = 'https://script.google.com/macros/s/AKfycbxDjTzOWBeuHXaJRcMY5dv3
                 if (!response.ok) throw new Error(`네트워크 응답이 올바르지 않습니다: ${response.statusText}`);
                 const result = await response.json();
                 if (!result.success) throw new Error(result.error);
+
                 sheetData.clear();
                 result.data.forEach(row => {
-                    if (row.hakbun !== GHOST_STUDENT_HAKBUN) {
-                        sheetData.set(String(row.hakbun), row);
+                if (row.hakbun !== GHOST_STUDENT_HAKBUN) {
+                    const hasLocation = row.location && String(row.location).trim() !== '';
+                    if (hasLocation) {
+                    sheetData.set(String(row.hakbun), row);
                     }
-                });
-                updateAllUI();
-            } catch (error) {
-                console.error("Sync Error:", error);
-                updateCounts();
-            }
-        }
+                }
+        });
+
+    updateAllUI();
+  } catch (error) {
+    console.error("Sync Error:", error);
+    updateCounts();
+  }
+}
+
 
         function updateAllUI() {
             updateSeatsDisplay();
@@ -333,11 +339,16 @@ const API_URL = 'https://script.google.com/macros/s/AKfycbxDjTzOWBeuHXaJRcMY5dv3
 
         function updateSeatsDisplay() {
             document.querySelectorAll('.seat').forEach(seatEl => {
-                if(seatEl.dataset.hakbun) {
-                    seatEl.classList.toggle('moved', sheetData.has(seatEl.dataset.hakbun));
-                }
+                const hakbun = seatEl.dataset.hakbun;
+                if (!hakbun) return;
+
+                const row = sheetData.get(hakbun);
+                const hasLocation = row && typeof row.location === 'string' && row.location.trim() !== '';
+
+                seatEl.classList.toggle('moved', !!hasLocation);
             });
         }
+
 
         function updateRightPanel() {
             classPanel.innerHTML = '';
@@ -585,3 +596,159 @@ const API_URL = 'https://script.google.com/macros/s/AKfycbxDjTzOWBeuHXaJRcMY5dv3
                 document.body.style.cursor = 'default';
             }
         }
+       /* =========================
+        사진 갤러리(슬라이드) 모듈 - Crossfade 버전
+        ========================= */
+        const GALLERY_INTERVAL_MS = 10000;
+
+        const galleryImages = [
+        'images/이비1.jpeg',
+        'images/이비2.jpeg',
+        // 여기에 경로만 추가하면 자동 순환
+        ];
+
+        let galleryIndex = 0;
+        let galleryTimer = null;
+
+        // 내부 상태: 더블 버퍼 레이어
+        let layerA = null;
+        let layerB = null;
+        let activeLayerKey = 'A';
+
+        function ensureLayers() {
+        const wrapper = document.getElementById('galleryWrapper');
+        if (!wrapper) return false;
+
+        // 이미 만들어졌으면 스킵
+        if (layerA && layerB) return true;
+
+        // 두 개의 <img> 레이어를 동적으로 추가 (HTML 수정 불필요)
+        layerA = document.createElement('img');
+        layerA.id = 'galleryLayerA';
+        layerA.className = 'gallery-layer is-active';
+
+        layerB = document.createElement('img');
+        layerB.id = 'galleryLayerB';
+        layerB.className = 'gallery-layer';
+
+        // 내비/인디케이터보다 뒤에 오도록 가장 앞에 삽입
+        wrapper.insertBefore(layerB, wrapper.firstChild);
+        wrapper.insertBefore(layerA, wrapper.firstChild);
+
+        return true;
+        }
+
+        function updateIndicators() {
+        const indicators = document.getElementById('galleryIndicators');
+        if (!indicators) return;
+        [...indicators.children].forEach((child, i) => {
+            child.classList.toggle('active', i === galleryIndex);
+        });
+        }
+
+        function crossFadeTo(index) {
+        if (!ensureLayers()) return;
+
+        const nextSrc = galleryImages[index];
+        const nextLayer = activeLayerKey === 'A' ? layerB : layerA;
+        const curLayer  = activeLayerKey === 'A' ? layerA : layerB;
+
+        // 이미지가 로드된 후에 페이드 시작 (플래시 방지)
+        const doFade = () => {
+            nextLayer.classList.add('is-active');
+            curLayer.classList.remove('is-active');
+            activeLayerKey = (nextLayer === layerA) ? 'A' : 'B';
+            updateIndicators();
+        };
+
+        if (nextLayer.src === nextSrc && nextLayer.complete) {
+            doFade();
+        } else {
+            nextLayer.onload = () => { nextLayer.onload = null; doFade(); };
+            nextLayer.src = nextSrc;
+        }
+        }
+
+        function renderGallery() {
+        // 첫 렌더: 레이어 생성 + 초기 이미지 세팅
+        if (!ensureLayers()) return;
+        const firstSrc = galleryImages[galleryIndex] || '';
+        layerA.src = firstSrc;
+        layerA.classList.add('is-active');
+        layerB.classList.remove('is-active');
+        activeLayerKey = 'A';
+        updateIndicators();
+        }
+
+        function createIndicators() {
+        const indicators = document.getElementById('galleryIndicators');
+        if (!indicators) return;
+        indicators.innerHTML = '';
+        galleryImages.forEach((_, i) => {
+            const dot = document.createElement('button');
+            dot.className = 'dot' + (i === galleryIndex ? ' active' : '');
+            dot.setAttribute('aria-label', `${i + 1}번 이미지`);
+            dot.addEventListener('click', () => {
+            galleryIndex = i;
+            crossFadeTo(galleryIndex);
+            resetGalleryTimer();
+            });
+            indicators.appendChild(dot);
+        });
+        }
+
+        function nextImage() {
+        if (galleryImages.length <= 1) return;
+        galleryIndex = (galleryIndex + 1) % galleryImages.length;
+        crossFadeTo(galleryIndex);
+        }
+        function prevImage() {
+        if (galleryImages.length <= 1) return;
+        galleryIndex = (galleryIndex - 1 + galleryImages.length) % galleryImages.length;
+        crossFadeTo(galleryIndex);
+        }
+
+        function startGalleryTimer() {
+        if (galleryTimer) clearInterval(galleryTimer);
+        galleryTimer = setInterval(nextImage, GALLERY_INTERVAL_MS);
+        }
+        function resetGalleryTimer() { startGalleryTimer(); }
+
+        function preloadGallery() {
+        galleryImages.forEach(src => { const i = new Image(); i.src = src; });
+        }
+
+        function initGallery() {
+        if (!galleryImages.length) return;
+
+        const wrapper = document.getElementById('galleryWrapper');
+        const showControls = galleryImages.length > 1;
+
+        if (wrapper) {
+            // 컨트롤 표시/숨김
+            wrapper.querySelectorAll('.gallery-nav').forEach(btn => {
+            btn.style.display = showControls ? 'block' : 'none';
+            });
+            const indicators = document.getElementById('galleryIndicators');
+            if (indicators) {
+            indicators.style.display = showControls ? 'flex' : 'none';
+            if (showControls) createIndicators();
+            }
+
+            // 호버 시 자동재생 일시정지/재개
+            wrapper.addEventListener('mouseenter', () => { if (galleryTimer) clearInterval(galleryTimer); });
+            wrapper.addEventListener('mouseleave', startGalleryTimer);
+        }
+
+        ensureLayers();
+        preloadGallery();
+        renderGallery();
+        startGalleryTimer();
+        }
+
+        window.addEventListener('DOMContentLoaded', initGallery);
+
+        // HTML onclick에서 호출
+        window.nextImage = nextImage;
+        window.prevImage = prevImage;
+

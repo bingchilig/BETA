@@ -378,9 +378,17 @@
             background: linear-gradient(135deg, #86efac, #22c55e); 
         }
 
-        .seat.moved { 
-            background: linear-gradient(135deg, #64748b, #475569); 
+        /* 이동한 학생 하이라이트 (시트 D열 값 있음) */
+        .seat.moved {
+        /* inline background를 이겨야 해서 !important 필수 */
+        background: linear-gradient(135deg, #ff6b6b, #ffffff) !important; /* soft coral → rose-600 */
+        border: 1px solid rgba(225, 29, 72, 0.55) !important;             /* rose-600 */
+        box-shadow:
+            0 0 0 2px rgba(225, 29, 72, 0.25),
+            0 8px 18px rgba(225, 29, 72, 0.35) !important;
+        color: #fff;
         }
+
 
         .seat.empty { 
             background: #1e293b; 
@@ -789,3 +797,123 @@
         .key.backspace {
             min-width: 60px;
         }
+        /* === Gallery (사진 슬라이드) === */
+        .gallery-area {
+        /* 메인 그리드가 3열이라고 가정: 1~2열(왼/중) 전체 폭을 차지 */
+        grid-column: 1 / span 2;
+        }
+
+        .gallery-wrapper {
+        position: relative;
+        width: 100%;
+        aspect-ratio: 3 / 2;           /* 필요 시 16/9 등으로 변경 */
+        border-radius: 12px;
+        overflow: hidden;
+        background: #0f1720;           /* 로딩 전 배경 */
+        box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+        }
+
+        .gallery-wrapper img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+        }
+
+        .gallery-nav {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        border: 0;
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        background: rgba(0,0,0,0.35);
+        color: #fff;
+        font-size: 24px;
+        line-height: 42px;
+        cursor: pointer;
+        user-select: none;
+        }
+
+        .gallery-nav:hover { background: rgba(0,0,0,0.6); }
+        .gallery-nav.prev { left: 10px; }
+        .gallery-nav.next { right: 10px; }
+
+        .gallery-indicators {
+        position: absolute;
+        left: 0; right: 0; bottom: 10px;
+        display: flex;
+        justify-content: center;
+        gap: 8px;
+        }
+
+        .gallery-indicators .dot {
+        width: 8px; height: 8px;
+        border-radius: 50%;
+        border: 0;
+        background: rgba(255,255,255,0.4);
+        cursor: pointer;
+        }
+        .gallery-indicators .dot.active {
+        background: rgba(255,255,255,0.95);
+        }
+
+        /* 반응형: 모바일에서는 전체 가로폭 사용 */
+        @media (max-width: 1024px) {
+        .gallery-area { grid-column: 1 / -1; }
+        }
+        /* === 플로팅 갤러리: 다른 레이아웃 불변 === */
+        :root {
+        /* ⬇️ 원하는 위치/크기로 조정 (px 단위) */
+        --gallery-left: 260px;   /* “그 공간”의 X 위치 */
+        --gallery-top: 100px;    /* “그 공간”의 Y 위치 */
+        --gallery-width: 520px;  /* 꽉 채우지 않게 적당한 폭 */
+        --gallery-aspect: 3 / 2; /* 16/9, 4/3 등으로 변경 가능 */
+        }
+
+        /* 기준을 만들기 위해 #app 기준으로 절대배치 */
+        #app { position: relative; }
+
+        .gallery-float {
+        position: absolute;
+        left: var(--gallery-left);
+        top: var(--gallery-top);
+        width: var(--gallery-width);
+        z-index: 10;              /* 다른 카드 위로 */
+        pointer-events: auto;     /* 버튼 클릭 가능 */
+        }
+
+        .gallery-float .gallery-wrapper {
+        aspect-ratio: var(--gallery-aspect);
+        }
+
+        /* 모바일에서 겹치면 숨김 (필요 없으면 제거) */
+        @media (max-width: 1024px) {
+        .gallery-float { display: none; }
+        }
+        /* 기존 단일 <img id="galleryImage">는 숨김 (HTML 수정 없이 호환) */
+        #galleryImage { display: none !important; }
+
+        /* 두 레이어를 겹쳐서 크로스페이드 */
+        .gallery-wrapper { position: relative; }
+        .gallery-layer {
+        position: absolute;
+        inset: 0;
+        width: 100%; height: 100%;
+        object-fit: cover;
+        opacity: 0;
+        transition: opacity 600ms cubic-bezier(.2,.7,.2,1);
+        will-change: opacity;
+        backface-visibility: hidden;
+        }
+        .gallery-layer.is-active { opacity: 1; }
+
+        /* 호버 시 컨트롤만 살짝 강조 (선택) */
+        .gallery-wrapper:hover .gallery-nav { background: rgba(0,0,0,0.55); }
+
+        /* 사용자가 모션 감소 선호 시 즉시 전환 */
+        @media (prefers-reduced-motion: reduce) {
+        .gallery-layer { transition: none; }
+        }
+
