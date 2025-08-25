@@ -617,6 +617,10 @@ const API_URL = 'https://script.google.com/macros/s/AKfycbxDjTzOWBeuHXaJRcMY5dv3
         'images/이비13.jpeg',
         'images/이비14.jpeg',
         'images/이비15.jpeg',
+        'images/이비16.jpeg',
+        'images/이비17.jpeg',
+        'images/이비18.jpeg',
+        'images/이비19.jpeg',
         // 여기에 경로만 추가하면 자동 순환
         ];
 
@@ -764,6 +768,7 @@ const API_URL = 'https://script.google.com/macros/s/AKfycbxDjTzOWBeuHXaJRcMY5dv3
         // HTML onclick에서 호출
         window.nextImage = nextImage;
         window.prevImage = prevImage;
+
 
 
 
