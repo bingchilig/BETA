@@ -28,6 +28,14 @@
             </div>
         </header>
         <main class="main">
+            <div class="gallery-float" id="galleryFloat">
+                <div class="gallery-wrapper" id="galleryWrapper" role="region" aria-label="사진 갤러리">
+                    <img id="galleryImage" alt="갤러리 이미지" />
+                    <button class="gallery-nav prev" aria-label="이전" onclick="prevImage()">‹</button>
+                    <button class="gallery-nav next" aria-label="다음" onclick="nextImage()">›</button>
+                    <div id="galleryIndicators" class="gallery-indicators"></div>
+                </div>
+            </div>
             <section class="left-area">
                 <div class="section-title">수행평가 알리미</div>
                 <div class="assessment-container" id="assessmentContainer"></div>
