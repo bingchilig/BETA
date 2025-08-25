@@ -605,6 +605,7 @@ const API_URL = 'https://script.google.com/macros/s/AKfycbxDjTzOWBeuHXaJRcMY5dv3
         'images/이비1.jpeg',
         'images/이비2.jpeg',
         'images/이비3.jpeg',
+        'images/이비4.jpeg',
         // 여기에 경로만 추가하면 자동 순환
         ];
 
