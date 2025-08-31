@@ -1,282 +1,263 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>인원체크 시스템</title>
-    <link rel="stylesheet" href="styles.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>청녹AI — MVP 통합본</title>
+<style>
+:root{font-family:Inter,ui-sans-serif,system-ui,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial}
+body{margin:16px;background:#f7fbf9;color:#0b2b1d}
+header{display:flex;align-items:center;gap:12px}
+.logo{width:56px;height:56px;border-radius:12px;background:linear-gradient(135deg,#0b7a55,#2ecc71);display:flex;align-items:center;justify-content:center;color:white;font-weight:700}
+h1{font-size:20px;margin:0}
+.note{font-size:13px;color:#2b4638}
+.container{display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-top:12px}
+.panel{background:#fff;border-radius:10px;padding:12px;box-shadow:0 2px 6px rgba(11,43,29,0.06)}
+.top-row{display:flex;justify-content:space-between;align-items:center}
+.site-input input{padding:8px;border-radius:8px;border:1px solid #d7e9df;width:260px}
+.controls{display:flex;gap:8px}
+button{background:#0b7a55;color:white;border:none;padding:8px 10px;border-radius:8px;cursor:pointer}
+button.secondary{background:#e6f3ed;color:#0b2b1d}
+.chart-wrap{height:320px;margin-top:12px}
+.rec-card{margin-top:12px;background:#fff;padding:12px;border-radius:8px}
+.progress{height:18px;background:#e9f6ef;border-radius:10px;overflow:hidden}
+.progress > div{height:100%;background:linear-gradient(90deg,#0b7a55,#2ecc71);width:0%}
+.rec-top{display:flex;justify-content:space-between;align-items:center}
+.rec-body{display:flex;justify-content:space-between;margin-top:10px}
+.rec-text{font-size:13px;color:#234235}
+.side-panel .card{padding:12px}
+.sensor-list{display:flex;flex-direction:column;gap:8px}
+.val{font-weight:700;font-size:18px}
+.footer{margin-top:18px;font-size:12px;color:#223f32}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.12.0/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
-    <div id="app">
-        <header class="topbar">
-            <div class="clock-section">
-                <div id="clock" class="clock">00:00:00</div>
-                <div id="scheduleInfo" class="schedule-info">
-                    <div id="currentPeriod"></div>
-                    <div class="progress-container" id="progressContainer">
-                        <div class="progress-bar">
-                            <div class="progress-fill" id="progressFill"></div>
-                        </div>
-                        <div class="progress-text" id="progressText">0%</div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- 명언 섹션 추가 -->
-            <div class="quote-section" id="quoteSection">
-                <div class="quote-text" id="quoteText">명언을 불러오는 중...</div>
-                <div class="quote-author" id="quoteAuthor">- 작가 -</div>
-            </div>
-            
-            <div class="center-info">
-                <div class="info-item">총원 <span id="total">29</span></div>
-                <div class="info-item">현원 <span id="present">29</span></div>
-                <div class="info-item">결원 <span id="absent">0</span></div>
-            </div>
-        </header>
-        <main class="main">
-            <div class="gallery-float" id="galleryFloat">
-                <div class="gallery-wrapper" id="galleryWrapper" role="region" aria-label="사진 갤러리">
-                    <img id="galleryImage" alt="갤러리 이미지" />
-                    <button class="gallery-nav prev" aria-label="이전" onclick="prevImage()">‹</button>
-                    <button class="gallery-nav next" aria-label="다음" onclick="nextImage()">›</button>
-                    <div id="galleryIndicators" class="gallery-indicators"></div>
-                </div>
-            </div>
-            <section class="left-area">
-                <div class="section-title">수행평가 알리미</div>
-                <div class="assessment-container" id="assessmentContainer"></div>
-                <button class="add-btn" onclick="openAssessmentModal()">수행평가 추가</button>
-             
-            </section>
-            <section class="middle-area">
-                <div class="section-title">D-Day</div>
-                <div class="dday-container" id="ddayContainer"></div>
-                <button class="add-btn" onclick="openDdayModal()">D-Day 추가</button>
-            </section>
-            <section class="right-area">
-                <div class="seats-container">
-                    <div id="seatGrid" class="seat-grid"></div>
-                </div>
-                <div class="movement-container">
-                    <h3>이동 현황</h3>
-                    <div id="classPanel" class="class-panel"></div>
-                </div>
-            </section>
-        </main>
-        <div id="bearingOverlay" class="bearing-overlay"></div>
-        <div id="bearingSide" class="bearing-side">
-            <div class="side-title">세부 위치 선택</div>
-            <div id="etcList" class="etc-list"></div>
-        </div>
+<header>
+  <div class="logo">청녹</div>
+  <div>
+    <h1>청녹AI — MVP 통합본</h1>
+    <div class="note">LSTM 기반 시계열 + 반복학습/강화학습 시각화</div>
+  </div>
+</header>
+
+<main class="container">
+  <section class="panel main-panel">
+    <div class="top-row">
+      <div class="site-input">
+        <label>파일럿 지점</label>
+        <input id="pilotSite" type="text" placeholder="예: 낙동강 XXX 정수장">
+      </div>
+      <div class="controls">
+        <button id="btnTrain">(1) 모델 학습</button>
+        <button id="btnStart">(2) 시뮬레이션 시작</button>
+        <button id="btnPredict" class="secondary">(3) 예측 실행</button>
+        <button id="btnApply">(4) 권고 적용</button>
+      </div>
     </div>
 
-    <!-- D-Day 모달 -->
-    <div id="ddayModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-title">D-Day 추가</div>
-            <div class="form-group">
-                <label class="form-label">이벤트 명</label>
-                <input type="text" id="ddayTitle" class="form-input" placeholder="예: 중간고사">
-                <div id="ddayKeyboard" class="virtual-keyboard">
-                    <div class="keyboard-row">
-                        <div class="key" onclick="typeKey('ㄱ')">ㄱ</div>
-                        <div class="key" onclick="typeKey('ㄴ')">ㄴ</div>
-                        <div class="key" onclick="typeKey('ㄷ')">ㄷ</div>
-                        <div class="key" onclick="typeKey('ㄹ')">ㄹ</div>
-                        <div class="key" onclick="typeKey('ㅁ')">ㅁ</div>
-                        <div class="key" onclick="typeKey('ㅂ')">ㅂ</div>
-                        <div class="key" onclick="typeKey('ㅅ')">ㅅ</div>
-                        <div class="key" onclick="typeKey('ㅇ')">ㅇ</div>
-                        <div class="key" onclick="typeKey('ㅈ')">ㅈ</div>
-                        <div class="key" onclick="typeKey('ㅊ')">ㅊ</div>
-                    </div>
-                    <div class="keyboard-row">
-                        <div class="key" onclick="typeKey('ㅋ')">ㅋ</div>
-                        <div class="key" onclick="typeKey('ㅌ')">ㅌ</div>
-                        <div class="key" onclick="typeKey('ㅍ')">ㅍ</div>
-                        <div class="key" onclick="typeKey('ㅎ')">ㅎ</div>
-                        <div class="key" onclick="typeKey('ㅏ')">ㅏ</div>
-                        <div class="key" onclick="typeKey('ㅑ')">ㅑ</div>
-                        <div class="key" onclick="typeKey('ㅓ')">ㅓ</div>
-                        <div class="key" onclick="typeKey('ㅕ')">ㅕ</div>
-                        <div class="key" onclick="typeKey('ㅗ')">ㅗ</div>
-                        <div class="key" onclick="typeKey('ㅛ')">ㅛ</div>
-                    </div>
-                    <div class="keyboard-row">
-                        <div class="key" onclick="typeKey('ㅜ')">ㅜ</div>
-                        <div class="key" onclick="typeKey('ㅠ')">ㅠ</div>
-                        <div class="key" onclick="typeKey('ㅡ')">ㅡ</div>
-                        <div class="key" onclick="typeKey('ㅣ')">ㅣ</div>
-                        <div class="key" onclick="typeKey('1')">1</div>
-                        <div class="key" onclick="typeKey('2')">2</div>
-                        <div class="key" onclick="typeKey('3')">3</div>
-                        <div class="key" onclick="typeKey('4')">4</div>
-                        <div class="key" onclick="typeKey('5')">5</div>
-                        <div class="key" onclick="typeKey('6')">6</div>
-                    </div>
-                    <div class="keyboard-row">
-                        <div class="key" onclick="typeKey('7')">7</div>
-                        <div class="key" onclick="typeKey('8')">8</div>
-                        <div class="key" onclick="typeKey('9')">9</div>
-                        <div class="key" onclick="typeKey('0')">0</div>
-                        <div class="key space" onclick="typeKey(' ')">스페이스</div>
-                        <div class="key backspace" onclick="backspaceKey()">지우기</div>
-                    </div>
-                </div>
-            </div>
-            <div class="form-group">
-                <label class="form-label">날짜</label>
-                <input type="date" id="ddayDate" class="form-input">
-            </div>
-            <div class="modal-actions">
-                <button class="modal-btn secondary" onclick="closeDdayModal()">취소</button>
-                <button class="modal-btn primary" onclick="addDday()">추가</button>
-            </div>
-        </div>
+    <div id="chartWrap" class="chart-wrap">
+      <canvas id="mainChart"></canvas>
     </div>
 
-    <!-- 수행평가 모달 -->
-    <div id="assessmentModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-title">수행평가 추가</div>
-            <div class="form-group">
-                <label class="form-label">과목명</label>
-                <input type="text" id="assessmentSubject" class="form-input" placeholder="예: 수학">
-                <div id="assessmentKeyboard" class="virtual-keyboard">
-                    <div class="keyboard-row">
-                        <div class="key" onclick="typeKey('ㄱ', 'assessmentSubject')">ㄱ</div>
-                        <div class="key" onclick="typeKey('ㄴ', 'assessmentSubject')">ㄴ</div>
-                        <div class="key" onclick="typeKey('ㄷ', 'assessmentSubject')">ㄷ</div>
-                        <div class="key" onclick="typeKey('ㄹ', 'assessmentSubject')">ㄹ</div>
-                        <div class="key" onclick="typeKey('ㅁ', 'assessmentSubject')">ㅁ</div>
-                        <div class="key" onclick="typeKey('ㅂ', 'assessmentSubject')">ㅂ</div>
-                        <div class="key" onclick="typeKey('ㅅ', 'assessmentSubject')">ㅅ</div>
-                        <div class="key" onclick="typeKey('ㅇ', 'assessmentSubject')">ㅇ</div>
-                        <div class="key" onclick="typeKey('ㅈ', 'assessmentSubject')">ㅈ</div>
-                        <div class="key" onclick="typeKey('ㅊ', 'assessmentSubject')">ㅊ</div>
-                    </div>
-                    <div class="keyboard-row">
-                        <div class="key" onclick="typeKey('ㅋ', 'assessmentSubject')">ㅋ</div>
-                        <div class="key" onclick="typeKey('ㅌ', 'assessmentSubject')">ㅌ</div>
-                        <div class="key" onclick="typeKey('ㅍ', 'assessmentSubject')">ㅍ</div>
-                        <div class="key" onclick="typeKey('ㅎ', 'assessmentSubject')">ㅎ</div>
-                        <div class="key" onclick="typeKey('ㅏ', 'assessmentSubject')">ㅏ</div>
-                        <div class="key" onclick="typeKey('ㅑ', 'assessmentSubject')">ㅑ</div>
-                        <div class="key" onclick="typeKey('ㅓ', 'assessmentSubject')">ㅓ</div>
-                        <div class="key" onclick="typeKey('ㅕ', 'assessmentSubject')">ㅕ</div>
-                        <div class="key" onclick="typeKey('ㅗ', 'assessmentSubject')">ㅗ</div>
-                        <div class="key" onclick="typeKey('ㅛ', 'assessmentSubject')">ㅛ</div>
-                    </div>
-                    <div class="keyboard-row">
-                        <div class="key" onclick="typeKey('ㅜ', 'assessmentSubject')">ㅜ</div>
-                        <div class="key" onclick="typeKey('ㅠ', 'assessmentSubject')">ㅠ</div>
-                        <div class="key" onclick="typeKey('ㅡ', 'assessmentSubject')">ㅡ</div>
-                        <div class="key" onclick="typeKey('ㅣ', 'assessmentSubject')">ㅣ</div>
-                        <div class="key" onclick="typeKey('1', 'assessmentSubject')">1</div>
-                        <div class="key" onclick="typeKey('2', 'assessmentSubject')">2</div>
-                        <div class="key" onclick="typeKey('3', 'assessmentSubject')">3</div>
-                        <div class="key" onclick="typeKey('4', 'assessmentSubject')">4</div>
-                        <div class="key" onclick="typeKey('5', 'assessmentSubject')">5</div>
-                        <div class="key" onclick="typeKey('6', 'assessmentSubject')">6</div>
-                    </div>
-                    <div class="keyboard-row">
-                        <div class="key" onclick="typeKey('7', 'assessmentSubject')">7</div>
-                        <div class="key" onclick="typeKey('8', 'assessmentSubject')">8</div>
-                        <div class="key" onclick="typeKey('9', 'assessmentSubject')">9</div>
-                        <div class="key" onclick="typeKey('0', 'assessmentSubject')">0</div>
-                        <div class="key space" onclick="typeKey(' ', 'assessmentSubject')">스페이스</div>
-                        <div class="key backspace" onclick="backspaceKey('assessmentSubject')">지우기</div>
-                    </div>
-                </div>
-            </div>
-            <div class="form-group">
-                <label class="form-label">날짜</label>
-                <input type="date" id="assessmentDate" class="form-input">
-            </div>
-            <div class="modal-actions">
-                <button class="modal-btn secondary" onclick="closeAssessmentModal()">취소</button>
-                <button class="modal-btn primary" onclick="addAssessment()">추가</button>
-            </div>
+    <div id="rec" class="rec-card">
+      <div class="rec-top">
+        <div>
+          <div class="title">수돗물 안전지수</div>
+          <div class="small">향후 24시간 예측 기반 (평균 · 최대)</div>
         </div>
+        <div class="rec-stats">
+          <div class="progress"><div id="safetyBar"></div></div>
+          <div class="stat-text">24h 평균: <span id="safetyAvg">—</span>/100 | 24h 최대: <span id="safetyMax">—</span>/100</div>
+        </div>
+      </div>
+
+      <div class="rec-body">
+        <div class="rec-left">
+          <div class="subtitle">권고(예시)</div>
+          <div id="recText" class="rec-text">모델 미학습. 학습 후 예측을 실행하세요.</div>
+        </div>
+        <div class="rec-right">
+          <div class="files">
+            <button id="btnDownload">CSV 다운로드</button>
+            <input id="csvUpload" type="file" accept="text/csv">
+          </div>
+        </div>
+      </div>
     </div>
-    
 
-    
-    <script src="script.js"></script>
-    <script src="new.js"></script>
-    <script>
-        // 명언 API 호출 함수 추가
-        async function fetchQuote() {
-            try {
-                const response = await fetch('https://korean-advice-open-api.vercel.app/api/advice');
-                const data = await response.json();
-                
-                const quoteText = document.getElementById('quoteText');
-                const quoteAuthor = document.getElementById('quoteAuthor');
-                
-                if (data && data.message && data.author) {
-                    quoteText.textContent = `"${data.message}"`;
-                    quoteAuthor.textContent = `- ${data.author} -`;
-                } else {
-                    quoteText.textContent = '"오늘도 좋은 하루 되세요!"';
-                    quoteAuthor.textContent = '- 시스템 -';
-                }
-            } catch (error) {
-                console.error('명언을 불러오는데 실패했습니다:', error);
-                const quoteText = document.getElementById('quoteText');
-                const quoteAuthor = document.getElementById('quoteAuthor');
-                quoteText.textContent = '"실패는 성공의 어머니다"';
-                quoteAuthor.textContent = '- 속담 -';
-            }
-        }
+  </section>
 
-        // 진행률 업데이트 함수 추가
-        function updateProgress() {
-            const now = new Date();
-            const totalMinutesInDay = 24 * 60;
-            const currentMinutes = now.getHours() * 60 + now.getMinutes();
-            const percentage = ((currentMinutes / totalMinutesInDay) * 100).toFixed(1);
-            
-            const progressFill = document.getElementById('progressFill');
-            const progressText = document.getElementById('progressText');
-            const progressContainer = document.getElementById('progressContainer');
-            const currentPeriod = document.getElementById('currentPeriod');
-            
-            if (progressFill && progressText) {
-                progressFill.style.width = percentage + '%';
-                progressText.textContent = percentage + '%';
-                progressContainer.style.display = 'flex';
-                currentPeriod.textContent = `오늘 하루 진행률`;
-            }
-        }
+  <aside class="panel side-panel">
+    <div class="card">
+      <div class="card-title">센서 (시뮬레이션)</div>
+      <div class="sensor-list">
+        <div>Chlorophyll-a (µg/L) <div id="valChl" class="val">—</div></div>
+        <div>Turbidity (NTU) <div id="valTurb" class="val">—</div></div>
+        <div>Temperature (℃) <div id="valTemp" class="val">—</div></div>
+        <div>Flow (m/s) <div id="valFlow" class="val">—</div></div>
+      </div>
+      <div class="meta">
+        <div>모델 상태: <span id="modelStatus">미학습</span></div>
+      </div>
+      <div class="checklist">
+        <ol>
+          <li>파일럿 지점 입력</li>
+          <li>모델 학습(합성 데이터)</li>
+          <li>시뮬레이션 → 예측 → 스크린샷</li>
+          <li>CSV 다운로드 및 제안서 첨부</li>
+        </ol>
+      </div>
+    </div>
+  </aside>
+</main>
 
-        // 주기적으로 명언 업데이트 (30분마다)
-        function startQuoteRotation() {
-            fetchQuote(); // 초기 로드
-            setInterval(fetchQuote, 30 * 60 * 1000); // 30분마다 새로운 명언
-        }
+<footer class="footer">청녹AI MVP — 통합본 (현장 적용 전 검증 필요)</footer>
 
-        // 기존 시계 함수에 진행률 업데이트 추가
-        function updateClock() {
-            const now = new Date();
-            const timeString = now.toLocaleTimeString('ko-KR', { 
-                hour12: false,
-                hour: '2-digit',
-                minute: '2-digit', 
-                second: '2-digit'
-            });
-            document.getElementById('clock').textContent = timeString;
-            updateProgress(); // 진행률도 함께 업데이트
-        }
+<script>
+window.addEventListener('DOMContentLoaded', () => {
+  const HISTORY_LEN=24, FUTURE_HORIZON=24, MAX_CHART_POINTS=48;
+  let history=[], logs=[], simTimer=null, model=null, chart=null, scalers={xMin:null, xMax:null};
 
-        // 페이지 로드 시 초기화
-        document.addEventListener('DOMContentLoaded', function() {
-            updateClock();
-            setInterval(updateClock, 1000);
-            startQuoteRotation();
-        });
-    </script>
+  const valChl=document.getElementById('valChl'), valTurb=document.getElementById('valTurb'), valTemp=document.getElementById('valTemp'), valFlow=document.getElementById('valFlow');
+  const modelStatus=document.getElementById('modelStatus'), safetyBar=document.getElementById('safetyBar'), safetyAvg=document.getElementById('safetyAvg'), safetyMax=document.getElementById('safetyMax'), recText=document.getElementById('recText');
+  const btnTrain=document.getElementById('btnTrain'), btnStart=document.getElementById('btnStart'), btnPredict=document.getElementById('btnPredict'), btnApply=document.getElementById('btnApply');
+  const btnDownload=document.getElementById('btnDownload'), csvUpload=document.getElementById('csvUpload');
+  const base={chl:8, turb:2.5, temp:23, flow:1.2};
+
+  function initChart(){
+    const ctx=document.getElementById('mainChart').getContext('2d');
+    chart=new Chart(ctx,{type:'line',data:{labels:[],datasets:[{label:'Chlorophyll-a (µg/L)',data:[],borderColor:'#0b7a55',tension:0.3,yAxisID:'y1',spanGaps:true},{label:'Predicted Risk (0-100)',data:[],borderColor:'#cc3b3b',tension:0.3,yAxisID:'y2',borderDash:[6,4],pointRadius:2}]},options:{responsive:true,maintainAspectRatio:false,scales:{y1:{type:'linear',position:'left',title:{display:true,text:'Chl-a (µg/L)'}},y2:{type:'linear',position:'right',title:{display:true,text:'Risk'},grid:{drawOnChartArea:false},min:0,max:100}}}});
+  }
+
+  function genSequenceWithBloom(seqLen){
+    const seq=[], bloomChance=0.25, hasBloom=Math.random()<bloomChance, bloomStart=hasBloom?Math.floor(Math.random()*(seqLen-8))+4:null, K=40+Math.random()*80, r=0.12+Math.random()*0.22, chl0=base.chl+(Math.random()-0.5)*3;
+    for(let t=0;t<seqLen;t++){
+      const season=Math.sin((t/24)*2*Math.PI)*2.0;
+      let chl;
+      if(hasBloom && t>=bloomStart){const dt=t-bloomStart, A=Math.max(0.1,(K-chl0)/Math.max(0.1,chl0)); chl=K/(1+A*Math.exp(-r*dt));}
+      else{chl=Math.max(0, chl0+season+(Math.random()-0.5)*1.2);}
+      const turb=Math.max(0.4,0.8+0.03*chl+(Math.random()-0.5)*0.6);
+      const temp=base.temp+Math.sin((t/24)*2*Math.PI)*1.2+(Math.random()-0.5)*0.6;
+      const flow=Math.max(0.12, base.flow+(Math.random()-0.5)*0.4-(chl>30?0.12:0));
+      seq.push({chl:parseFloat(chl.toFixed(2)), turb:parseFloat(turb.toFixed(2)), temp:parseFloat(temp.toFixed(2)), flow:parseFloat(flow.toFixed(2))});
+    }
+    return seq;
+  }
+
+  function riskScoreNormalized({chl,turb,temp,flow}){const chlScore=Math.tanh(chl/60), turbScore=Math.tanh(turb/30), tempScore=Math.max(0,(temp-18)/15), flowScore=Math.max(0,1-flow/3); const raw=0.65*chlScore+0.15*turbScore+0.1*tempScore+0.1*flowScore; return Math.max(0,Math.min(1,raw));}
+
+  function genReading(){const seqLen=HISTORY_LEN+FUTURE_HORIZON; const seq=genSequenceWithBloom(seqLen); const cur=seq[Math.floor(Math.random()*(HISTORY_LEN/2))+HISTORY_LEN-1]; return {t:new Date().toISOString(), chl:cur.chl, turb:cur.turb, temp:cur.temp, flow:cur.flow};}
+
+  function pushReading(r){history.push(r); if(history.length>HISTORY_LEN) history.shift(); logs.push(r); updateUIFromLatest();}
+
+  function updateUIFromLatest(){
+    const last=history[history.length-1]; if(!last) return;
+    valChl.textContent=last.chl; valTurb.textContent=last.turb; valTemp.textContent=last.temp; valFlow.textContent=last.flow;
+    const timeLabel=new Date().toLocaleTimeString();
+    chart.data.labels.push(timeLabel); chart.data.datasets[0].data.push(last.chl);
+    while(chart.data.labels.length>MAX_CHART_POINTS){chart.data.labels.shift(); chart.data.datasets[0].data.shift(); if(chart.data.datasets[1].data.length>0) chart.data.datasets[1].data.shift();}
+    chart.update();
+  }
+
+  function makeSyntheticDataset(n){
+    const X=[], Y=[];
+    for(let i=0;i<n;i++){
+      const long=genSequenceWithBloom(HISTORY_LEN+FUTURE_HORIZON);
+      const input=long.slice(0,HISTORY_LEN).map(p=>[p.chl,p.turb,p.temp,p.flow]);
+      const future=long.slice(HISTORY_LEN,HISTORY_LEN+FUTURE_HORIZON).map(p=>riskScoreNormalized(p));
+      X.push(input.flat()); Y.push(future);
+    }
+    return {X,Y};
+  }
+
+  function computeScalers(X){
+    const inputDim=HISTORY_LEN*4, mins=Array(inputDim).fill(Number.POSITIVE_INFINITY), maxs=Array(inputDim).fill(Number.NEGATIVE_INFINITY);
+    X.forEach(row=>{for(let i=0;i<inputDim;i++){if(row[i]<mins[i]) mins[i]=row[i]; if(row[i]>maxs[i]) maxs[i]=row[i];}});
+    scalers.xMin=mins; scalers.xMax=maxs;
+  }
+
+  function normalizeInputRow(row){
+    const out=new Array(row.length);
+    for(let i=0;i<row.length;i++){const min=scalers.xMin[i], max=scalers.xMax[i]; out[i]=(row[i]-min)/Math.max(1e-6,max-min);}
+    return out;
+  }
+
+  function buildModel(){
+    const model=tf.sequential();
+    model.add(tf.layers.reshape({targetShape:[HISTORY_LEN,4], inputShape:[HISTORY_LEN*4]}));
+    model.add(tf.layers.lstm({units:64,returnSequences:false}));
+    model.add(tf.layers.dense({units:64,activation:'relu'}));
+    model.add(tf.layers.dense({units:FUTURE_HORIZON,activation:'sigmoid'}));
+    model.compile({optimizer:tf.train.adam(0.001), loss:'meanSquaredError'});
+    return model;
+  }
+
+  async function trainModel(){
+    try{
+      btnTrain.disabled=true; modelStatus.textContent='학습 데이터 생성 중...';
+      const n=600, ds=makeSyntheticDataset(n);
+      computeScalers(ds.X);
+      const Xn=ds.X.map(r=>normalizeInputRow(r)), xs=tf.tensor2d(Xn), ys=tf.tensor2d(ds.Y);
+      model=buildModel(); modelStatus.textContent='모델 학습 시작';
+      await model.fit(xs,ys,{epochs:24,batchSize:32,callbacks:{onEpochEnd:(epoch,logs)=>{modelStatus.textContent=`학습중 epoch ${epoch+1} loss=${(logs.loss||0).toFixed(4)}`;}}});
+      modelStatus.textContent='모델 학습 완료';
+      xs.dispose(); ys.dispose();
+    }catch(err){console.error('학습 오류',err); modelStatus.textContent='학습 오류: 콘솔 확인';}finally{btnTrain.disabled=false;}
+  }
+
+  async function runPredict(){
+    try{
+      if(!model){alert('모델 없음. 학습 먼저'); return;}
+      if(history.length<HISTORY_LEN){alert('히스토리 부족'); return;}
+      const lastSeq=history.slice(-HISTORY_LEN).map(r=>[r.chl,r.turb,r.temp,r.flow]).flat();
+      const inputN=normalizeInputRow(lastSeq), inputTensor=tf.tensor2d([inputN]);
+      const pred=model.predict(inputTensor);
+      const arr=await pred.array();
+      let preds=arr[0].map(v=>Math.max(0,Math.min(1,v)));
+      preds=preds.map((_,i,a)=>{const p0=a[i-1]!==undefined?a[i-1]:a[i], p1=a[i], p2=a[i+1]!==undefined?a[i+1]:a[i]; return (p0+p1+p2)/3;});
+      const preds100=preds.map(p=>Math.round(p*100));
+      const avg24=Math.round(preds.reduce((a,b)=>a+b,0)/preds.length*100), max24=Math.max(...preds100);
+      safetyAvg.textContent=avg24; safetyMax.textContent=max24; safetyBar.style.width=avg24+'%';
+      recText.textContent=makeRecommendationFromRisk(avg24,max24);
+      const labelsLen=chart.data.labels.length;
+      const predsSeries=Array(Math.max(0,labelsLen-preds100.length)).fill(null).concat(preds100);
+      chart.data.datasets[1].data=predsSeries.slice(-MAX_CHART_POINTS);
+      while(chart.data.labels.length>MAX_CHART_POINTS){chart.data.labels.shift(); chart.data.datasets[0].data.shift();}
+      chart.update();
+      window.lastPrediction={preds:preds100, avg24, max24};
+      inputTensor.dispose(); pred.dispose();
+    }catch(err){console.error('예측 오류',err); alert('예측 오류: 콘솔 확인');}
+  }
+
+  function makeRecommendationFromRisk(avg,max){if(max>75)return `심각(예측 최고위험 ${max}). 즉시 활성탄 20~40% 투입`; if(max>50)return `경고(예측 최고위험 ${max}). 활성탄 10~20% 투입`; if(avg>30)return `주의(24h 평균 ${avg}). 관측 주기 단축`; return `양호: 평상 관측 유지.`;}
+
+  function applyRecommendation(){
+    if(!window.lastPrediction){alert('먼저 예측 실행'); return;}
+    const avg=window.lastPrediction.avg24, effectFactor=Math.max(0,Math.min(0.45,avg/220));
+    const adjusted=window.lastPrediction.preds.map(p=>Math.round(p*(1-effectFactor)));
+    const adjAvg=Math.round(adjusted.reduce((a,b)=>a+b,0)/adjusted.length);
+    recText.textContent+=` 적용 시 예상 24h 평균 리스크: ${adjAvg}`;
+    alert('권고 적용 시뮬레이션 완료');
+  }
+
+  function downloadCSV(){const rows=[['timestamp','chl','turb','temp','flow']]; logs.forEach(r=>rows.push([r.t,r.chl,r.turb,r.temp,r.flow])); const csvContent='data:text/csv;charset=utf-8,'+rows.map(e=>e.join(',')).join('\n'); const encodedUri=encodeURI(csvContent); const link=document.createElement('a'); link.setAttribute('href',encodedUri); link.setAttribute('download','sensor_logs.csv'); document.body.appendChild(link); link.click(); document.body.removeChild(link);}
+
+  function handleUpload(evt){const file=evt.target.files[0]; if(!file) return; const reader=new FileReader(); reader.onload=e=>{const text=e.target.result.split('\n').slice(1).map(l=>l.trim()).filter(l=>l).map(l=>{const [t,chl,turb,temp,flow]=l.split(','); return {t,chl:parseFloat(chl),turb:parseFloat(turb),temp:parseFloat(temp),flow:parseFloat(flow)}}); history.splice(0,history.length,...text.slice(-HISTORY_LEN)); logs.push(...text); updateUIFromLatest();}; reader.readAsText(file);}
+
+  function startSimulation(){if(simTimer){clearInterval(simTimer); simTimer=null;}
+    simTimer=setInterval(()=>{pushReading(genReading());}, 1200);
+  }
+
+  initChart();
+  btnTrain.addEventListener('click',trainModel);
+  btnStart.addEventListener('click',startSimulation);
+  btnPredict.addEventListener('click',runPredict);
+  btnApply.addEventListener('click',applyRecommendation);
+  btnDownload.addEventListener('click',downloadCSV);
+  csvUpload.addEventListener('change',handleUpload);
+});
+</script>
 </body>
-
-</html> 
+</html>
