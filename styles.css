@@ -545,7 +545,7 @@ html, body {
 }
 
 .movement-container h3 { 
-    font-size: 20px; 
+    font-size: 30px; 
     font-weight: 800; 
     margin-bottom: 16px; 
     color: #f1f5f9; 
@@ -1540,3 +1540,4 @@ html, body {
     25% { transform: translateX(-5px); }
     75% { transform: translateX(5px); }
 }
+
